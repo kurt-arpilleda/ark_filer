@@ -50,6 +50,7 @@ class _SoftwareWebViewScreenState extends State<SoftwareWebViewScreenJP> with Wi
   bool _isCountryLoadingPh = false;
   bool _isCountryLoadingJp = false;
   bool _isDownloadDialogShowing = false;
+  int _selectedIndex = 0;
 
   @override
   void initState() {
@@ -1276,6 +1277,71 @@ class _SoftwareWebViewScreenState extends State<SoftwareWebViewScreenJP> with Wi
             ),
           ),
         ),
+        bottomNavigationBar: BottomNavigationBar(
+          backgroundColor: Color(0xFF3452B4),
+          selectedItemColor: Colors.white,
+          unselectedItemColor: Colors.white.withOpacity(0.6),
+          currentIndex: _selectedIndex,
+          type: BottomNavigationBarType.fixed, // To allow more than 3 items
+          onTap: (index) async {
+            setState(() {
+              _selectedIndex = index;
+            });
+
+            if (webViewController != null) {
+              try {
+                switch (index) {
+                  case 0: // OT
+                    await webViewController?.evaluateJavascript(
+                      source: "document.querySelector('button[onclick=\"overTimeForm()\"]').click();",
+                    );
+                    break;
+                  case 1: // Leave
+                    await webViewController?.evaluateJavascript(
+                      source: "document.getElementById('btnLeaveInput').click();",
+                    );
+                    break;
+                  case 2: // Shift
+                    await webViewController?.evaluateJavascript(
+                      source: "document.querySelector('button[onclick=\"changeShiftForm()\"]').click();",
+                    );
+                    break;
+                  case 3: // OB
+                    await webViewController?.evaluateJavascript(
+                      source: "document.querySelector('button[onclick=\"officialBussiness()\"]').click();",
+                    );
+                    break;
+                }
+              } catch (e) {
+                Fluttertoast.showToast(
+                  msg: _currentLanguageFlag == 2
+                      ? "ボタンをクリックできませんでした"
+                      : "Could not click button",
+                  toastLength: Toast.LENGTH_SHORT,
+                  gravity: ToastGravity.BOTTOM,
+                );
+              }
+            }
+          },
+          items: [
+            BottomNavigationBarItem(
+              icon: Icon(Icons.access_time),
+              label: _currentLanguageFlag == 2 ? '残業' : 'OT',
+            ),
+            BottomNavigationBarItem(
+              icon: Icon(Icons.event_busy),
+              label: _currentLanguageFlag == 2 ? '休暇' : 'Leave',
+            ),
+            BottomNavigationBarItem(
+              icon: Icon(Icons.swap_horiz),
+              label: _currentLanguageFlag == 2 ? 'シフト' : 'Change Shift',
+            ),
+            BottomNavigationBarItem(
+              icon: Icon(Icons.business_center),
+              label: _currentLanguageFlag == 2 ? '出張' : 'OB',
+            ),
+          ],
+        ),
         body: SafeArea(
           child: Stack(
             children: [
@@ -1335,58 +1401,26 @@ class _SoftwareWebViewScreenState extends State<SoftwareWebViewScreenJP> with Wi
                       _isLoading = false;
                       _progress = 1;
                     });
-                    String scrollScript = """
-  function makeDialogScrollable() {
-    const dialog = document.querySelector('.tbox');
-    if (dialog) {
-      // Check if dialog is partially off-screen
-      const rect = dialog.getBoundingClientRect();
-      const isOffScreen = rect.left < 0 || rect.top < 0 || 
-                         rect.right > window.innerWidth || 
-                         rect.bottom > window.innerHeight;
-      
-      if (isOffScreen) {
-        // Make dialog container scrollable
-        const tinner = dialog.querySelector('.tinner');
-        if (tinner) {
-          tinner.style.overflow = 'auto';
-          tinner.style.maxHeight = '80vh';
-          tinner.style.maxWidth = '90vw';
-        }
-        
-        // Make content scrollable if needed
-        const tcontent = dialog.querySelector('.tcontent');
-        if (tcontent) {
-          tcontent.style.overflow = 'auto';
-          tcontent.style.maxHeight = '70vh';
-        }
-      }
-    }
-  }
-  
-  // Run initially and set up mutation observer for dynamic dialogs
-  makeDialogScrollable();
-  
-  const observer = new MutationObserver(function(mutations) {
-    makeDialogScrollable();
-  });
-  
-  observer.observe(document.body, {
-    childList: true,
-    subtree: true,
-    attributes: true
-  });
-  """;
 
                     try {
-                      await controller.evaluateJavascript(source: scrollScript);
+                      await controller.evaluateJavascript(source: """
+      // Make the div invisible but still present in DOM
+      var buttonsDiv = document.querySelector('div.col-12.d-flex.justify-content-center > div.row');
+      if (buttonsDiv) {
+        buttonsDiv.style.visibility = 'hidden';
+        buttonsDiv.style.position = 'absolute';
+      }
+      
+      // Alternative approach for the parent div
+      var parentDiv = document.querySelector('div.col-12.d-flex.justify-content-center');
+      if (parentDiv) {
+        parentDiv.style.opacity = '0';
+        parentDiv.style.pointerEvents = 'auto'; // Ensure events still work
+      }
+    """);
                     } catch (e) {
-                      debugPrint("Error making dialog scrollable: $e");
+                      debugPrint("Error hiding buttons: $e");
                     }
-
-                    // Setup input field detection after page loads
-                    await Future.delayed(Duration(milliseconds: 1000));
-                    await _setupInputFieldDetection();
                   },
                   onProgressChanged: (controller, progress) {
                     setState(() {
