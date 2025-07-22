@@ -1228,7 +1228,7 @@ class _SoftwareWebViewScreenState extends State<SoftwareWebViewScreen> with Widg
             ),
             BottomNavigationBarItem(
               icon: Icon(Icons.swap_horiz),
-              label: _currentLanguageFlag == 2 ? 'シフト' : 'Shift',
+              label: _currentLanguageFlag == 2 ? 'シフト' : 'Change Shift',
             ),
             BottomNavigationBarItem(
               icon: Icon(Icons.business_center),
