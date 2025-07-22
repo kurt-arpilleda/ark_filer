@@ -18,9 +18,9 @@ import 'package:unique_identifier/unique_identifier.dart';
 import 'barcode_scanner_screen.dart';
 
 class SoftwareWebViewScreen extends StatefulWidget {
-  final int initialLinkId;
+  final int linkID;
 
-  SoftwareWebViewScreen({this.initialLinkId = 17});
+  SoftwareWebViewScreen({required this.linkID});
 
   @override
   _SoftwareWebViewScreenState createState() => _SoftwareWebViewScreenState();
@@ -50,13 +50,10 @@ class _SoftwareWebViewScreenState extends State<SoftwareWebViewScreen> with Widg
   bool _isCountryLoadingPh = false;
   bool _isCountryLoadingJp = false;
   bool _isDownloadDialogShowing = false;
-  int _currentTabIndex = 0;
-  final List<int> _linkIds = [17, 16, 18]; // Define your link IDs here
-  late int _currentLinkId;
+  int _selectedIndex = 0;
   @override
   void initState() {
     super.initState();
-    _currentLinkId = widget.initialLinkId;
     WidgetsBinding.instance.addObserver(this);
 
     _initializePullToRefresh();
@@ -176,7 +173,7 @@ class _SoftwareWebViewScreenState extends State<SoftwareWebViewScreen> with Widg
 
   Future<void> _fetchAndLoadUrl() async {
     try {
-      String url = await apiService.fetchSoftwareLink(_currentLinkId); // Changed from widget.linkId
+      String url = await apiService.fetchSoftwareLink(widget.linkID);
       if (mounted) {
         setState(() {
           _webUrl = url;
@@ -712,119 +709,6 @@ class _SoftwareWebViewScreenState extends State<SoftwareWebViewScreen> with Widg
       }
     }
   }
-
-  Future<void> _setupInputFieldDetection() async {
-    if (webViewController != null) {
-      String jsCode = '''
-(function() {
-  let button;
-  let container;
-
-  function isVisible(elem) {
-    if (!elem || elem.offsetParent === null) return false;
-    
-    const rect = elem.getBoundingClientRect();
-    const centerX = rect.left + rect.width / 2;
-    const centerY = rect.top + rect.height / 2;
-    
-    const topElem = document.elementFromPoint(centerX, centerY);
-    return topElem === elem || elem.contains(topElem);
-  }
-
-  function updateBarcodeScannerButton() {
-    const input = document.getElementById('lotNumber');
-    if (!input) return;
-
-    const shouldShow = isVisible(input);
-
-    // If it should be visible and not already added
-    if (shouldShow && !input.dataset.hasBarcodeButton) {
-      input.dataset.hasBarcodeButton = 'true';
-
-      container = document.createElement('div');
-      container.style.position = 'relative';
-      container.style.display = 'inline-block';
-      container.style.width = '100%';
-
-      input.parentNode.insertBefore(container, input);
-      container.appendChild(input);
-
-      button = document.createElement('div');
-      button.innerHTML = '𝄃𝄂𝄂𝄀𝄁𝄃';
-      button.style.cssText = \`
-        position: absolute;
-        right: 8px;
-        top: 50%;
-        transform: translateY(-50%);
-        z-index: 9999;
-        background: #3452B4;
-        color: white;
-        padding: 0 4px;
-        border-radius: 4px;
-        font-size: 10px;
-        cursor: pointer;
-        box-shadow: 0 1px 3px rgba(0,0,0,0.2);
-        font-family: Arial, sans-serif;
-        height: 24px;
-        display: flex;
-        align-items: center;
-        justify-content: center;
-      \`;
-
-      button.onclick = function(e) {
-        e.stopPropagation();
-        window.flutter_inappwebview.callHandler('openBarcodeScanner');
-      };
-
-      container.appendChild(button);
-    }
-
-    // If the input is now hidden or behind modal, remove the button
-    if (!shouldShow && button && container && container.parentNode) {
-      input.removeAttribute('data-has-barcode-button');
-      container.parentNode.insertBefore(input, container);
-      container.remove();
-      button = null;
-      container = null;
-    }
-  }
-
-  // Initial check
-  updateBarcodeScannerButton();
-
-  // Observe DOM for changes (e.g., modal open/close)
-  const observer = new MutationObserver(function() {
-    updateBarcodeScannerButton();
-  });
-
-  observer.observe(document.body, {
-    childList: true,
-    subtree: true,
-    attributes: true,
-    attributeFilter: ['style', 'class']
-  });
-
-  // Also check every second in case changes aren't caught by observer
-  setInterval(updateBarcodeScannerButton, 1000);
-})();
-''';
-
-      try {
-        await webViewController!.evaluateJavascript(source: jsCode);
-      } catch (e) {
-        print('Error setting up input field detection: \$e');
-      }
-    }
-  }
-
-  Future<void> _loadWebViewForTab(int index) async {
-    setState(() {
-      _currentTabIndex = index;
-      _currentLinkId = _linkIds[index];
-      _isLoading = true;
-    });
-    await _fetchAndLoadUrl();
-  }
   @override
   Widget build(BuildContext context) {
     return WillPopScope(
@@ -850,6 +734,24 @@ class _SoftwareWebViewScreenState extends State<SoftwareWebViewScreen> with Widg
                   _scaffoldKey.currentState?.openDrawer();
                 },
               ),
+              // title: _idNumber != null
+              //     ? Text(
+              //   "ID: $_idNumber",
+              //   style: TextStyle(
+              //     color: Colors.white,
+              //     fontSize: 14,
+              //     fontWeight: FontWeight.w500,
+              //     letterSpacing: 0.5,
+              //     shadows: [
+              //       Shadow(
+              //         color: Colors.black.withOpacity(0.2),
+              //         blurRadius: 2,
+              //         offset: Offset(1, 1),
+              //       ),
+              //     ],
+              //   ),
+              // )
+              //     : null,
               actions: [
                 IconButton(
                   padding: EdgeInsets.zero,
@@ -1053,8 +955,8 @@ class _SoftwareWebViewScreenState extends State<SoftwareWebViewScreen> with Widg
                                     if (_idNumber == null || _currentLanguageFlag == null) return;
 
                                     try {
-                                      final manualUrl = await apiService.fetchManualLink(_currentLinkId, _currentLanguageFlag!); // Changed from widget.linkID
-                                      final fileName = 'manual_${_currentLinkId}_${_currentLanguageFlag}.pdf'; // Changed from widget.linkID
+                                      final manualUrl = await apiService.fetchManualLink(widget.linkID, _currentLanguageFlag!);
+                                      final fileName = 'manual_${widget.linkID}_${_currentLanguageFlag}.pdf';
 
                                       Navigator.push(
                                         context,
@@ -1062,7 +964,7 @@ class _SoftwareWebViewScreenState extends State<SoftwareWebViewScreen> with Widg
                                           builder: (context) => PDFViewerScreen(
                                             pdfUrl: manualUrl,
                                             fileName: fileName,
-                                            languageFlag: _currentLanguageFlag!,
+                                            languageFlag: _currentLanguageFlag!, // Add this line
                                           ),
                                         ),
                                       );
@@ -1273,8 +1175,42 @@ class _SoftwareWebViewScreenState extends State<SoftwareWebViewScreen> with Widg
           backgroundColor: Color(0xFF3452B4),
           selectedItemColor: Colors.white,
           unselectedItemColor: Colors.white.withOpacity(0.6),
-          currentIndex: _currentTabIndex,
-          onTap: _loadWebViewForTab,
+          currentIndex: _selectedIndex, // This controls the highlight
+          onTap: (index) async {
+            setState(() {
+              _selectedIndex = index; // Update the selected index
+            });
+
+            if (webViewController != null) {
+              try {
+                switch (index) {
+                  case 0: // OT
+                    await webViewController?.evaluateJavascript(
+                      source: "document.querySelector('button[onclick=\"overTimeForm()\"]').click();",
+                    );
+                    break;
+                  case 1: // Leave
+                    await webViewController?.evaluateJavascript(
+                      source: "document.getElementById('btnLeaveInput').click();",
+                    );
+                    break;
+                  case 2: // OB
+                    await webViewController?.evaluateJavascript(
+                      source: "document.querySelector('button[onclick=\"changeShiftForm()\"]').click();",
+                    );
+                    break;
+                }
+              } catch (e) {
+                Fluttertoast.showToast(
+                  msg: _currentLanguageFlag == 2
+                      ? "ボタンをクリックできませんでした"
+                      : "Could not click button",
+                  toastLength: Toast.LENGTH_SHORT,
+                  gravity: ToastGravity.BOTTOM,
+                );
+              }
+            }
+          },
           items: [
             BottomNavigationBarItem(
               icon: Icon(Icons.access_time),
@@ -1285,7 +1221,7 @@ class _SoftwareWebViewScreenState extends State<SoftwareWebViewScreen> with Widg
               label: _currentLanguageFlag == 2 ? '休暇' : 'Leave',
             ),
             BottomNavigationBarItem(
-              icon: Icon(Icons.business_center), // OB = Official Business
+              icon: Icon(Icons.business_center),
               label: _currentLanguageFlag == 2 ? '出張' : 'OB',
             ),
           ],
@@ -1350,46 +1286,6 @@ class _SoftwareWebViewScreenState extends State<SoftwareWebViewScreen> with Widg
                       _progress = 1;
                     });
                     String scrollScript = """
-  function makeDialogScrollable() {
-    const dialog = document.querySelector('.tbox');
-    if (dialog) {
-      // Check if dialog is partially off-screen
-      const rect = dialog.getBoundingClientRect();
-      const isOffScreen = rect.left < 0 || rect.top < 0 || 
-                         rect.right > window.innerWidth || 
-                         rect.bottom > window.innerHeight;
-      
-      if (isOffScreen) {
-        // Make dialog container scrollable
-        const tinner = dialog.querySelector('.tinner');
-        if (tinner) {
-          tinner.style.overflow = 'auto';
-          tinner.style.maxHeight = '80vh';
-          tinner.style.maxWidth = '90vw';
-        }
-        
-        // Make content scrollable if needed
-        const tcontent = dialog.querySelector('.tcontent');
-        if (tcontent) {
-          tcontent.style.overflow = 'auto';
-          tcontent.style.maxHeight = '70vh';
-        }
-      }
-    }
-  }
-  
-  // Run initially and set up mutation observer for dynamic dialogs
-  makeDialogScrollable();
-  
-  const observer = new MutationObserver(function(mutations) {
-    makeDialogScrollable();
-  });
-  
-  observer.observe(document.body, {
-    childList: true,
-    subtree: true,
-    attributes: true
-  });
   """;
 
                     try {
@@ -1397,10 +1293,7 @@ class _SoftwareWebViewScreenState extends State<SoftwareWebViewScreen> with Widg
                     } catch (e) {
                       debugPrint("Error making dialog scrollable: $e");
                     }
-
-                    // Setup input field detection after page loads
                     await Future.delayed(Duration(milliseconds: 1000));
-                    await _setupInputFieldDetection();
                   },
                   onProgressChanged: (controller, progress) {
                     setState(() {
