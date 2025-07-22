@@ -1175,10 +1175,11 @@ class _SoftwareWebViewScreenState extends State<SoftwareWebViewScreen> with Widg
           backgroundColor: Color(0xFF3452B4),
           selectedItemColor: Colors.white,
           unselectedItemColor: Colors.white.withOpacity(0.6),
-          currentIndex: _selectedIndex, // This controls the highlight
+          currentIndex: _selectedIndex,
+          type: BottomNavigationBarType.fixed, // To allow more than 3 items
           onTap: (index) async {
             setState(() {
-              _selectedIndex = index; // Update the selected index
+              _selectedIndex = index;
             });
 
             if (webViewController != null) {
@@ -1194,9 +1195,14 @@ class _SoftwareWebViewScreenState extends State<SoftwareWebViewScreen> with Widg
                       source: "document.getElementById('btnLeaveInput').click();",
                     );
                     break;
-                  case 2: // OB
+                  case 2: // Shift
                     await webViewController?.evaluateJavascript(
                       source: "document.querySelector('button[onclick=\"changeShiftForm()\"]').click();",
+                    );
+                    break;
+                  case 3: // OB
+                    await webViewController?.evaluateJavascript(
+                      source: "document.querySelector('button[onclick=\"officialBussiness()\"]').click();",
                     );
                     break;
                 }
@@ -1219,6 +1225,10 @@ class _SoftwareWebViewScreenState extends State<SoftwareWebViewScreen> with Widg
             BottomNavigationBarItem(
               icon: Icon(Icons.event_busy),
               label: _currentLanguageFlag == 2 ? '休暇' : 'Leave',
+            ),
+            BottomNavigationBarItem(
+              icon: Icon(Icons.swap_horiz),
+              label: _currentLanguageFlag == 2 ? 'シフト' : 'Shift',
             ),
             BottomNavigationBarItem(
               icon: Icon(Icons.business_center),
@@ -1285,15 +1295,26 @@ class _SoftwareWebViewScreenState extends State<SoftwareWebViewScreen> with Widg
                       _isLoading = false;
                       _progress = 1;
                     });
-                    String scrollScript = """
-  """;
 
                     try {
-                      await controller.evaluateJavascript(source: scrollScript);
+                      await controller.evaluateJavascript(source: """
+      // Make the div invisible but still present in DOM
+      var buttonsDiv = document.querySelector('div.col-12.d-flex.justify-content-center > div.row');
+      if (buttonsDiv) {
+        buttonsDiv.style.visibility = 'hidden';
+        buttonsDiv.style.position = 'absolute';
+      }
+      
+      // Alternative approach for the parent div
+      var parentDiv = document.querySelector('div.col-12.d-flex.justify-content-center');
+      if (parentDiv) {
+        parentDiv.style.opacity = '0';
+        parentDiv.style.pointerEvents = 'auto'; // Ensure events still work
+      }
+    """);
                     } catch (e) {
-                      debugPrint("Error making dialog scrollable: $e");
+                      debugPrint("Error hiding buttons: $e");
                     }
-                    await Future.delayed(Duration(milliseconds: 1000));
                   },
                   onProgressChanged: (controller, progress) {
                     setState(() {
