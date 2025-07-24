@@ -1171,72 +1171,75 @@ class _SoftwareWebViewScreenState extends State<SoftwareWebViewScreen> with Widg
             ),
           ),
         ),
-        bottomNavigationBar: BottomNavigationBar(
-          backgroundColor: Color(0xFF3452B4),
-          selectedItemColor: Colors.white,
-          unselectedItemColor: Colors.white.withOpacity(0.6),
-          currentIndex: _selectedIndex,
-          type: BottomNavigationBarType.fixed, // To allow more than 3 items
-          onTap: (index) async {
-            setState(() {
-              _selectedIndex = index;
-            });
+          bottomNavigationBar: BottomNavigationBar(
+            backgroundColor: Color(0xFF3452B4),
+            selectedItemColor: Colors.white,
+            unselectedItemColor: Colors.white.withOpacity(0.6),
+            currentIndex: _selectedIndex,
+            type: BottomNavigationBarType.fixed,
+            iconSize: 20,
+            selectedFontSize: 10,
+            unselectedFontSize: 10,
+            onTap: (index) async {
+              setState(() {
+                _selectedIndex = index;
+              });
 
-            if (webViewController != null) {
-              try {
-                switch (index) {
-                  case 0: // OT
-                    await webViewController?.evaluateJavascript(
-                      source: "document.querySelector('button[onclick=\"overTimeForm()\"]').click();",
-                    );
-                    break;
-                  case 1: // Leave
-                    await webViewController?.evaluateJavascript(
-                      source: "document.getElementById('btnLeaveInput').click();",
-                    );
-                    break;
-                  case 2: // Shift
-                    await webViewController?.evaluateJavascript(
-                      source: "document.querySelector('button[onclick=\"changeShiftForm()\"]').click();",
-                    );
-                    break;
-                  case 3: // OB
-                    await webViewController?.evaluateJavascript(
-                      source: "document.querySelector('button[onclick=\"officialBussiness()\"]').click();",
-                    );
-                    break;
+              if (webViewController != null) {
+                try {
+                  switch (index) {
+                    case 0:
+                      await webViewController?.evaluateJavascript(
+                        source: "document.querySelector('button[onclick=\"overTimeForm()\"]').click();",
+                      );
+                      break;
+                    case 1:
+                      await webViewController?.evaluateJavascript(
+                        source: "document.getElementById('btnLeaveInput').click();",
+                      );
+                      break;
+                    case 2:
+                      await webViewController?.evaluateJavascript(
+                        source: "document.querySelector('button[onclick=\"changeShiftForm()\"]').click();",
+                      );
+                      break;
+                    case 3:
+                      await webViewController?.evaluateJavascript(
+                        source: "document.querySelector('button[onclick=\"officialBussiness()\"]').click();",
+                      );
+                      break;
+                  }
+                } catch (e) {
+                  Fluttertoast.showToast(
+                    msg: _currentLanguageFlag == 2
+                        ? "ボタンをクリックできませんでした"
+                        : "Could not click button",
+                    toastLength: Toast.LENGTH_SHORT,
+                    gravity: ToastGravity.BOTTOM,
+                  );
                 }
-              } catch (e) {
-                Fluttertoast.showToast(
-                  msg: _currentLanguageFlag == 2
-                      ? "ボタンをクリックできませんでした"
-                      : "Could not click button",
-                  toastLength: Toast.LENGTH_SHORT,
-                  gravity: ToastGravity.BOTTOM,
-                );
               }
-            }
-          },
-          items: [
-            BottomNavigationBarItem(
-              icon: Icon(Icons.access_time),
-              label: _currentLanguageFlag == 2 ? '残業' : 'OT',
-            ),
-            BottomNavigationBarItem(
-              icon: Icon(Icons.event_busy),
-              label: _currentLanguageFlag == 2 ? '休暇' : 'Leave',
-            ),
-            BottomNavigationBarItem(
-              icon: Icon(Icons.swap_horiz),
-              label: _currentLanguageFlag == 2 ? 'シフト' : 'Change Shift',
-            ),
-            BottomNavigationBarItem(
-              icon: Icon(Icons.business_center),
-              label: _currentLanguageFlag == 2 ? '出張' : 'OB',
-            ),
-          ],
-        ),
-        body: SafeArea(
+            },
+            items: [
+              BottomNavigationBarItem(
+                icon: Icon(Icons.access_time),
+                label: _currentLanguageFlag == 2 ? '残業' : 'OT',
+              ),
+              BottomNavigationBarItem(
+                icon: Icon(Icons.event_busy),
+                label: _currentLanguageFlag == 2 ? '休暇' : 'Leave',
+              ),
+              BottomNavigationBarItem(
+                icon: Icon(Icons.swap_horiz),
+                label: _currentLanguageFlag == 2 ? 'シフト' : 'Change Shift',
+              ),
+              BottomNavigationBarItem(
+                icon: Icon(Icons.business_center),
+                label: _currentLanguageFlag == 2 ? '出張' : 'OB',
+              ),
+            ],
+          ),
+          body: SafeArea(
           child: Stack(
             children: [
               if (_webUrl != null)
