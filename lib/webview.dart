@@ -794,9 +794,11 @@ class _SoftwareWebViewScreenState extends State<SoftwareWebViewScreen> with Widg
                               ],
                             ),
                           ),
-                          SizedBox(height: 20),
+                          SizedBox(height: 15),
                           Padding(
-                            padding: const EdgeInsets.only(left: 16.0),
+                            padding: EdgeInsets.only(
+                              left: _currentLanguageFlag == 2 ? 15.0 : 30.0,
+                            ),
                             child: Row(
                               children: [
                                 Text(
@@ -819,10 +821,10 @@ class _SoftwareWebViewScreenState extends State<SoftwareWebViewScreen> with Widg
                               ],
                             ),
                           ),
-                          SizedBox(height: 20),
+                          SizedBox(height: 15),
                           Padding(
                             padding: EdgeInsets.only(
-                              left: _currentLanguageFlag == 2 ? 46.0 : 30.0,
+                              left: _currentLanguageFlag == 2 ? 46.0 : 44.0,
                             ),
                             child: Row(
                               children: [
@@ -870,10 +872,10 @@ class _SoftwareWebViewScreenState extends State<SoftwareWebViewScreen> with Widg
                               ],
                             ),
                           ),
-                          SizedBox(height: 20),
+                          SizedBox(height: 15),
                           Padding(
                             padding: EdgeInsets.only(
-                              left: _currentLanguageFlag == 2 ? 58.0 : 32.0,
+                              left: _currentLanguageFlag == 2 ? 58.0 : 46.0,
                             ),
                             child: Row(
                               children: [
@@ -930,6 +932,70 @@ class _SoftwareWebViewScreenState extends State<SoftwareWebViewScreen> with Widg
                                           msg: _currentLanguageFlag == 2
                                               ? "メモボタンをクリックできませんでした"
                                               : "Could not click memo button",
+                                          toastLength: Toast.LENGTH_SHORT,
+                                          gravity: ToastGravity.BOTTOM,
+                                        );
+                                      }
+                                    }
+                                  },
+                                ),
+                              ],
+                            ),
+                          ),
+                          SizedBox(height: 15),
+                          Padding(
+                            padding: EdgeInsets.only(
+                              left: _currentLanguageFlag == 2 ? 25.0 : 9.0,
+                            ),
+                            child: Row(
+                              children: [
+                                Text(
+                                  _currentLanguageFlag == 2 ? 'バグ報告' : 'Bug Report',
+                                  style: TextStyle(
+                                    fontSize: 16,
+                                    fontWeight: FontWeight.bold,
+                                  ),
+                                ),
+                                SizedBox(width: 15),
+                                IconButton(
+                                  icon: Container(
+                                    width: 40,
+                                    height: 40,
+                                    decoration: BoxDecoration(
+                                      color: Color(0xFFE8991A),
+                                      shape: BoxShape.circle,
+                                      border: Border.all(
+                                        color: Colors.white,
+                                        width: 2,
+                                      ),
+                                      boxShadow: [
+                                        BoxShadow(
+                                          color: Colors.black.withOpacity(0.3),
+                                          blurRadius: 4,
+                                          offset: Offset(2, 2),
+                                        ),
+                                      ],
+                                    ),
+                                    child: Icon(
+                                      Icons.bug_report_outlined,
+                                      color: Colors.white,
+                                      size: 20,
+                                    ),
+                                  ),
+                                  onPressed: () async {
+                                    // Close the drawer first
+                                    Navigator.of(context).pop();
+
+                                    if (webViewController != null) {
+                                      try {
+                                        await webViewController!.evaluateJavascript(
+                                          source: "openBugReport('test', 'NG Report Software');",
+                                        );
+                                      } catch (e) {
+                                        Fluttertoast.showToast(
+                                          msg: _currentLanguageFlag == 2
+                                              ? "バグ報告を開けませんでした"
+                                              : "Could not open bug report",
                                           toastLength: Toast.LENGTH_SHORT,
                                           gravity: ToastGravity.BOTTOM,
                                         );
