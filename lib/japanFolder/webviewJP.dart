@@ -612,36 +612,69 @@ class _SoftwareWebViewScreenState extends State<SoftwareWebViewScreenJP> with Wi
               backgroundColor: Color(0xFF3452B4),
               centerTitle: true,
               toolbarHeight: kToolbarHeight - 20,
-              leading: IconButton(
-                padding: EdgeInsets.zero,
-                iconSize: 30,
-                icon: Icon(
-                  Icons.settings,
-                  color: Colors.white,
+              leadingWidth: 120,
+              leading: SizedBox(
+                width: 120,
+                child: Row(
+                  mainAxisAlignment: MainAxisAlignment.start,
+                  children: [
+                    IconButton(
+                      padding: EdgeInsets.zero,
+                      constraints: BoxConstraints(),
+                      iconSize: 30,
+                      icon: Icon(
+                        Icons.settings,
+                        color: Colors.white,
+                      ),
+                      onPressed: () {
+                        _scaffoldKey.currentState?.openDrawer();
+                      },
+                    ),
+                    SizedBox(width: 16),
+                    IconButton(
+                      padding: EdgeInsets.zero,
+                      constraints: BoxConstraints(),
+                      iconSize: 29.5,
+                      icon: Transform.translate(
+                        offset: Offset(0, -2), // move up by 2 pixels
+                        child: Icon(
+                          Icons.menu_book,
+                          color: Colors.amberAccent,
+                        ),
+                      ),
+                      onPressed: () async {
+                        if (_idNumber == null || _currentLanguageFlag == null) return;
+
+                        try {
+                          final manualUrl = await apiServiceJP.fetchManualLink(widget.linkID, _currentLanguageFlag!);
+                          final fileName = 'manual_${widget.linkID}_${_currentLanguageFlag}.pdf';
+
+                          Navigator.push(
+                            context,
+                            MaterialPageRoute(
+                              builder: (context) => PDFViewerScreen(
+                                pdfUrl: manualUrl,
+                                fileName: fileName,
+                                languageFlag: _currentLanguageFlag!,
+                              ),
+                            ),
+                          );
+                        } catch (e) {
+                          Fluttertoast.showToast(
+                            msg: _currentLanguageFlag == 2
+                                ? "マニュアルの読み込み中にエラーが発生しました: ${e.toString()}"
+                                : "Error loading manual: ${e.toString()}",
+                            toastLength: Toast.LENGTH_LONG,
+                            gravity: ToastGravity.BOTTOM,
+                          );
+                        }
+                      },
+                    ),
+                  ],
                 ),
-                onPressed: () {
-                  _scaffoldKey.currentState?.openDrawer();
-                },
               ),
-              // title: _idNumber != null
-              //     ? Text(
-              //   "ID: $_idNumber",
-              //   style: TextStyle(
-              //     color: Colors.white,
-              //     fontSize: 14,
-              //     fontWeight: FontWeight.w500,
-              //     letterSpacing: 0.5,
-              //     shadows: [
-              //       Shadow(
-              //         color: Colors.black.withOpacity(0.2),
-              //         blurRadius: 2,
-              //         offset: Offset(1, 1),
-              //       ),
-              //     ],
-              //   ),
-              // )
-              //     : null,
               actions: [
+                // Close button
                 IconButton(
                   padding: EdgeInsets.zero,
                   iconSize: 25,
@@ -817,57 +850,6 @@ class _SoftwareWebViewScreenState extends State<SoftwareWebViewScreenJP> with Wi
                                   iconSize: 28,
                                   onPressed: () {
                                     _showInputMethodPicker();
-                                  },
-                                ),
-                              ],
-                            ),
-                          ),
-                          SizedBox(height: 15),
-                          Padding(
-                            padding: EdgeInsets.only(
-                              left: _currentLanguageFlag == 2 ? 46.0 : 44.0,
-                            ),
-                            child: Row(
-                              children: [
-                                Text(
-                                  _currentLanguageFlag == 2
-                                      ? '手引き'
-                                      : 'Manual',
-                                  style: TextStyle(
-                                    fontSize: 16,
-                                    fontWeight: FontWeight.bold,
-                                  ),
-                                ),
-                                SizedBox(width: 15),
-                                IconButton(
-                                  icon: Icon(Icons.menu_book, size: 28),
-                                  iconSize: 28,
-                                  onPressed: () async {
-                                    if (_idNumber == null || _currentLanguageFlag == null) return;
-
-                                    try {
-                                      final manualUrl = await apiService.fetchManualLink(widget.linkID, _currentLanguageFlag!);
-                                      final fileName = 'manual_${widget.linkID}_${_currentLanguageFlag}.pdf';
-
-                                      Navigator.push(
-                                        context,
-                                        MaterialPageRoute(
-                                          builder: (context) => PDFViewerScreen(
-                                            pdfUrl: manualUrl,
-                                            fileName: fileName,
-                                            languageFlag: _currentLanguageFlag!, // Add this line
-                                          ),
-                                        ),
-                                      );
-                                    } catch (e) {
-                                      Fluttertoast.showToast(
-                                        msg: _currentLanguageFlag == 2
-                                            ? "マニュアルの読み込み中にエラーが発生しました: ${e.toString()}"
-                                            : "Error loading manual: ${e.toString()}",
-                                        toastLength: Toast.LENGTH_LONG,
-                                        gravity: ToastGravity.BOTTOM,
-                                      );
-                                    }
                                   },
                                 ),
                               ],

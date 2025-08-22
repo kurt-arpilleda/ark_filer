@@ -13,30 +13,32 @@ import 'package:wakelock_plus/wakelock_plus.dart';
 class AutoUpdate {
   static const List<String> apiUrls = [
     "http://192.168.254.163/",
-    "http://126.209.7.246/"
+    "http://192.168.1.213/",
+    "http://126.209.7.246/",
+    "http://220.157.175.232/",
   ];
 
   static const String versionPath = "V4/Others/Kurt/LatestVersionAPK/ArkForms/version.json";
   static const String apkPathPrefix = "V4/Others/Kurt/LatestVersionAPK/ArkForms/";
 
-  static const Duration requestTimeout = Duration(seconds: 2);
-  static const int maxRetries = 6;
+  static const Duration requestTimeout = Duration(seconds: 3);
+  static const int maxRetries = 3;
   static const Duration initialRetryDelay = Duration(seconds: 1);
 
   static bool isUpdating = false;
 
   static Future<void> checkForUpdate(BuildContext context) async {
-    // If already updating, don't start another update
     if (isUpdating) {
       return;
     }
-
     isUpdating = true;
 
     for (int attempt = 1; attempt <= maxRetries; attempt++) {
-      for (String apiUrl in apiUrls) {
+      final String? fastestUrl = await _findFastestWorkingUrl();
+
+      if (fastestUrl != null) {
         try {
-          final response = await http.get(Uri.parse("$apiUrl$versionPath")).timeout(requestTimeout);
+          final response = await http.get(Uri.parse("$fastestUrl$versionPath")).timeout(requestTimeout);
 
           if (response.statusCode == 200) {
             final Map<String, dynamic> versionInfo = jsonDecode(response.body);
@@ -53,7 +55,7 @@ class AutoUpdate {
                   context,
                   latestVersionName,
                   releaseNotes,
-                  apiUrl,
+                  fastestUrl,
                   apkFileName
               );
               isUpdating = false;
@@ -64,9 +66,10 @@ class AutoUpdate {
             }
           }
         } catch (e) {
-          print("Error checking for update from $apiUrl on attempt $attempt: $e");
+          print("Error checking for update from $fastestUrl on attempt $attempt: $e");
         }
       }
+
       if (attempt < maxRetries) {
         final delay = initialRetryDelay * (1 << (attempt - 1));
         print("Waiting for ${delay.inSeconds} seconds before retrying...");
@@ -78,6 +81,48 @@ class AutoUpdate {
     isUpdating = false;
   }
 
+  static Future<String?> _findFastestWorkingUrl() async {
+    final Completer<String> completer = Completer<String>();
+    int completedRequests = 0;
+    bool foundResult = false;
+
+    for (String url in apiUrls) {
+      _testUrl(url).then((bool isWorking) {
+        completedRequests++;
+
+        if (isWorking && !foundResult) {
+          foundResult = true;
+          if (!completer.isCompleted) {
+            completer.complete(url);
+            print("✅ Using update server: $url");
+          }
+        }
+
+        if (completedRequests == apiUrls.length && !foundResult) {
+          if (!completer.isCompleted) {
+            completer.complete("");
+          }
+        }
+      });
+    }
+
+    try {
+      final result = await completer.future.timeout(Duration(seconds: 5));
+      return result.isEmpty ? null : result;
+    } catch (e) {
+      return null;
+    }
+  }
+
+  static Future<bool> _testUrl(String url) async {
+    try {
+      final response = await http.get(Uri.parse("$url$versionPath")).timeout(requestTimeout);
+      return response.statusCode == 200;
+    } catch (e) {
+      return false;
+    }
+  }
+
   static Future<void> _showAutomaticUpdateDialog(
       BuildContext context,
       String versionName,
@@ -85,7 +130,6 @@ class AutoUpdate {
       String apiUrl,
       String apkFileName
       ) async {
-    // Enable wakelock when update dialog is shown
     await WakelockPlus.enable();
 
     await showDialog(
@@ -163,7 +207,6 @@ class AutoUpdate {
       },
     );
 
-    // Disable wakelock when dialog is dismissed
     await WakelockPlus.disable();
   }
 
@@ -180,25 +223,25 @@ class AutoUpdate {
           final File apkFile = File(apkFilePath);
 
           final request = http.Request('GET', Uri.parse("$apiUrl$apkPathPrefix$apkFileName"));
-          final http.StreamedResponse response = await request.send().timeout(requestTimeout);
+          final http.StreamedResponse response = await request.send().timeout(Duration(seconds: 30));
 
           if (response.statusCode == 200) {
             int totalBytes = response.contentLength ?? 0;
             int downloadedBytes = 0;
 
-            yield 0; // Start with 0%
+            yield 0;
 
             final fileSink = apkFile.openWrite();
             await for (var chunk in response.stream) {
               downloadedBytes += chunk.length;
               fileSink.add(chunk);
-              int progress = ((downloadedBytes / totalBytes) * 100).round();
-              yield progress; // Yield the progress percentage
+              int progress = totalBytes > 0 ? ((downloadedBytes / totalBytes) * 100).round() : 0;
+              yield progress;
             }
             await fileSink.close();
 
             if (await apkFile.exists()) {
-              yield 100; // Download complete
+              yield 100;
               await _installApk(context, apkFilePath);
               return;
             } else {

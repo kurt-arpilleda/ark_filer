@@ -252,7 +252,44 @@ class ApiServiceJP {
     }
     throw Exception("Both API URLs are unreachable after $maxRetries attempts");
   }
+  Future<String> fetchManualLink(int linkID, int languageFlag) async {
+    for (int attempt = 1; attempt <= maxRetries; attempt++) {
+      try {
+        final result = await _makeParallelRequest((apiUrl) async {
+          final uri = Uri.parse("${apiUrl}V4/Others/Kurt/ArkLinkAPI/kurt_fetchManualLink.php?linkID=$linkID");
+          print("Trying: $uri");
+          final response = await httpClient.get(uri);
 
+          if (response.statusCode == 200) {
+            final data = jsonDecode(response.body);
+            if (data.containsKey("manualLinkPH") && data.containsKey("manualLinkJP")) {
+              String relativePath = languageFlag == 1 ? data["manualLinkPH"] : data["manualLinkJP"];
+              if (relativePath.isEmpty) {
+                throw Exception("No manual available for selected language");
+              }
+              return _ApiResult(Uri.parse(apiUrl).resolve(relativePath).toString(), apiUrl);
+            } else {
+              throw Exception(data["error"] ?? "Invalid manual link format");
+            }
+          }
+          throw Exception("HTTP ${response.statusCode}");
+        });
+
+        return result;
+      } catch (e) {
+        print("Attempt $attempt failed: $e");
+        if (attempt < maxRetries) {
+          final delay = initialRetryDelay * (1 << (attempt - 1));
+          print("Waiting for ${delay.inSeconds} seconds before retrying...");
+          await Future.delayed(delay);
+        }
+      }
+    }
+
+    String finalError = "All API URLs are unreachable after $maxRetries attempts";
+    _showToast(finalError);
+    throw Exception(finalError);
+  }
   static void setupHttpOverrides() {
     HttpOverrides.global = MyHttpOverrides();
   }
