@@ -972,7 +972,14 @@ class _SoftwareWebViewScreenState extends State<SoftwareWebViewScreenJP> with Wi
                                     if (webViewController != null) {
                                       try {
                                         await webViewController!.evaluateJavascript(
-                                          source: "openBugReport('test', 'NG Report Software');",
+                                          source: '''
+                                            (function() {
+                                              var btn = document.querySelector('button[style*="background-color: orange"] i.fa-bug');
+                                              if (btn) {
+                                                btn.closest('button').click();
+                                              }
+                                            })();
+                                          ''',
                                         );
                                       } catch (e) {
                                         Fluttertoast.showToast(
